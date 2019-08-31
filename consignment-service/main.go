@@ -4,9 +4,9 @@ import (
 	// 导如 protoc 自动生成的包
 	pb "github.com/justcy/shippy/consignment-service/proto/consignment"
 	"context"
-	"net"
+	"github.com/micro/go-micro"
+	"github.com/micro/go-micro/server"
 	"log"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -50,38 +50,34 @@ type service struct {
 // 使 service 作为 gRPC 的服务端
 //
 // 托运新的货物
-func (s *service) CreateConsignment(ctx context.Context, req *pb.Consignment) (*pb.Response, error) {
+func (s *service) CreateConsignment(ctx context.Context, req *pb.Consignment, resp *pb.Response) error {
 	// 接收承运的货物
 	consignment, err := s.repo.Create(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	resp := &pb.Response{Created: true, Consignment: consignment}
-	return resp, nil
+	resp = &pb.Response{Created: true, Consignment: consignment}
+	return nil
 }
 
 // 获取目前所有托运的货物
-func (s *service) GetConsignments(ctx context.Context, req *pb.GetRequest) (*pb.Response, error) {
+func (s *service) GetConsignments(ctx context.Context, req *pb.GetRequest, resp *pb.Response)  error {
 	allConsignments := s.repo.GetAll()
-	resp := &pb.Response{Consignments: allConsignments}
-	return resp, nil
+	resp = &pb.Response{Consignments: allConsignments}
+	return nil
 }
 
 func main() {
-	listener, err := net.Listen("tcp", PORT)
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	log.Printf("listen on: %s\n", PORT)
-
-	server := grpc.NewServer()
+	service := micro.NewService(
+		micro.Name("go.micro.srv.consignment"),
+		micro.Version("latest"),
+		)
+	// 解析命令行参数
+	server.Init()
 	repo := Repository{}
+	pb.RegisterShippingServiceHandler(server.Server(), &service{repo})
 
-	// 向 rRPC 服务器注册微服务
-	// 此时会把我们自己实现的微服务 service 与协议中的 ShippingServiceServer 绑定
-	pb.RegisterShippingServiceServer(server, &service{repo})
-
-	if err := server.Serve(listener); err != nil {
+	if err := server.Run(); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
