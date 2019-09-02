@@ -1,18 +1,19 @@
 package main
 
 import (
-	pb "github.com/justcy/shippy/consignment-service/proto/consignment"
-	"io/ioutil"
+	"context"
 	"encoding/json"
 	"errors"
-	"google.golang.org/grpc"
+	pb "github.com/justcy/shippy/consignment-service/proto/consignment"
+	"github.com/micro/go-micro/config/cmd"
+	"io/ioutil"
 	"log"
 	"os"
-	"context"
+
+	microclient "github.com/micro/go-micro/client"
 )
 
 const (
-	ADDRESS           = "localhost:50051"
 	DEFAULT_INFO_FILE = "consignment.json"
 )
 
@@ -31,44 +32,34 @@ func parseFile(fileName string) (*pb.Consignment, error) {
 }
 
 func main() {
-	// 连接到 gRPC 服务器
-	conn, err := grpc.Dial(ADDRESS, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("connect error: %v", err)
-	}
-	defer conn.Close()
 
-	// 初始化 gRPC 客户端
-	client := pb.NewShippingServiceClient(conn)
+	cmd.Init()
+	// 创建微服务的客户端，简化了手动 Dial 连接服务端的步骤
+	client := pb.NewShippingServiceClient("go.micro.srv.consignment", microclient.DefaultClient)
 
-	// 在命令行中指定新的货物信息 json 文件
-	infoFile := DEFAULT_INFO_FILE
+	// Contact the server and print out its response.
+	file := DEFAULT_INFO_FILE
 	if len(os.Args) > 1 {
-		infoFile = os.Args[1]
+		file = os.Args[1]
 	}
 
-	// 解析货物信息
-	consignment, err := parseFile(infoFile)
+	consignment, err := parseFile(file)
+
 	if err != nil {
-		log.Fatalf("parse info file error: %v", err)
+		log.Fatalf("Could not parse file: %v", err)
 	}
 
-	// 调用 RPC
-	// 将货物存储到我们自己的仓库里
-	resp, err := client.CreateConsignment(context.Background(), consignment)
+	r, err := client.CreateConsignment(context.TODO(), consignment)
 	if err != nil {
-		log.Fatalf("create consignment error: %v", err)
+		log.Fatalf("Could not create: %v", err)
 	}
+	log.Printf("Created: %t", r.Created)
 
-	// 新货物是否托运成功
-	log.Printf("created: %t", resp.Created)
-
-	// 列出目前所有托运的货物
-	resp, err = client.GetConsignments(context.Background(), &pb.GetRequest{})
+	getAll, err := client.GetConsignments(context.Background(), &pb.GetRequest{})
 	if err != nil {
-		log.Fatalf("failed to list consignments: %v", err)
+		log.Fatalf("Could not list consignments: %v", err)
 	}
-	for _, c := range resp.Consignments {
-		log.Printf("%+v", c)
+	for _, v := range getAll.Consignments {
+		log.Println(v)
 	}
 }

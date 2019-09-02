@@ -1,21 +1,13 @@
 package main
 
 import (
+	"context"
 	// 导如 protoc 自动生成的包
 	pb "github.com/justcy/shippy/consignment-service/proto/consignment"
-	"context"
 	"github.com/micro/go-micro"
-	"github.com/micro/go-micro/server"
 	"log"
 )
-
-const (
-	PORT = ":50051"
-)
-
-//
 // 仓库接口
-//
 type IRepository interface {
 	Create(consignment *pb.Consignment) (*pb.Consignment, error) // 存放新货物
 
@@ -68,14 +60,14 @@ func (s *service) GetConsignments(ctx context.Context, req *pb.GetRequest, resp 
 }
 
 func main() {
-	service := micro.NewService(
+	server := micro.NewService(
 		micro.Name("go.micro.srv.consignment"),
 		micro.Version("latest"),
 		)
 	// 解析命令行参数
 	server.Init()
 	repo := Repository{}
-	pb.RegisterShippingServiceHandler(server.Server(), &service{repo})
+	pb.RegisterShippingServiceHandler(server.Server(),&service{repo})
 
 	if err := server.Run(); err != nil {
 		log.Fatalf("failed to serve: %v", err)
