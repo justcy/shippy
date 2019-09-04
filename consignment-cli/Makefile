@@ -2,4 +2,4 @@ build:
 	GOOS=linux GOARCH=amd64 go build
 	docker build -t consignment-cli .
 run:
-	docker run -e MICRO_REGISTRY=mdns consignment-cli
+	docker run --privileged --net="host" -e MICRO_REGISTRY=mdns consignment-cli ./consignment-cli /app/consignment.json eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VyIjp7ImlkIjoiMTYwMDViNDktNWRkZC00ODNkLTgyYTMtNjcwN2UyN2QwOTMwIiwibmFtZSI6IkV3YW4gVmFsZW50aW5lIiwiY29tcGFueSI6IkJCQyIsImVtYWlsIjoiZXdhbi52YWxlbnRpbmU4OUBnbWFpbC5jb20iLCJwYXNzd29yZCI6IiQyYSQxMCRVOHZmRzBSY0VLWkVRVGxpVWhyMm51Tkl5RkwzdmEzb0g3a2lsQXBBRHdQWTRQZFZwVjNyVyJ9LCJleHAiOjE1Njc3NzQ3NDIsImlzcyI6ImdvLm1pY3JvLnNydi51c2VyIn0.0qhdcy-6YTnuQqYStP5162_4O3DbGr6Stwolw3Yj1Qg

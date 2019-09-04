@@ -4,8 +4,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	pb "github.com/justcy/shippy/user-service/proto/user"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 )
 
 type handler struct {
@@ -64,5 +66,19 @@ func (h *handler) Auth(ctx context.Context, req *pb.User, resp *pb.Token) error 
 }
 
 func (h *handler) ValidateToken(ctx context.Context, req *pb.Token, resp *pb.Token) error {
+	// Decode token
+	claims, err := h.tokenService.Decode(req.Token)
+	if err != nil {
+		return err
+	}
+
+	log.Println(claims)
+
+	if claims.User.Id == "" {
+		return errors.New("invalid user")
+	}
+
+	resp.Valid = true
+
 	return nil
 }
